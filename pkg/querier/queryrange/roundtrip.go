@@ -960,6 +960,8 @@ func NewMetricTripperware(cfg Config, engineOpts logql.EngineOpts, log log.Logge
 		}
 	}
 
+	splitter := newMetricQuerySplitter(cfg, limits, iqo)
+
 	return base.MiddlewareFunc(func(next base.Handler) base.Handler {
 		statsHandler := indexStatsTripperware.Wrap(next)
 		retryNextHandler := next
@@ -985,12 +987,12 @@ func NewMetricTripperware(cfg Config, engineOpts logql.EngineOpts, log log.Logge
 
 		queryRangeMiddleware = append(
 			queryRangeMiddleware,
-			NewQuerySizeLimiterMiddleware(engineOpts, log, limits, statsHandler),
+			newSplitQuerySizeLimiterMiddleware(engineOpts, log, limits, splitter, statsHandler),
 		)
 
 		queryRangeMiddleware = append(queryRangeMiddleware,
 			base.InstrumentMiddleware("split_by_interval", metrics.InstrumentMiddlewareMetrics),
-			SplitByIntervalMiddleware(schema.Configs, limits, merger, newMetricQuerySplitter(cfg, limits, iqo), metrics.SplitByMetrics),
+			SplitByIntervalMiddleware(schema.Configs, limits, merger, splitter, metrics.SplitByMetrics),
 		)
 
 		if cfg.CacheResults {
