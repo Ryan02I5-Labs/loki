@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 5
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -27,3 +28,8 @@ jobs:
         run: go test ./pkg/storage/stores/shipper/indexshipper/downloads/ -run 'TestTable_CleanupBrokenCommonIndexSetKeepsUserIndexSets|TestTable_DropUnusedIndexRemovesTableDirectory' -count=1 -v
       - name: package tests
         run: go test ./pkg/storage/stores/shipper/indexshipper/downloads/ -count=1
+      - name: golangci-lint (upstream version and config), whole package
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2 run --timeout=15m ./pkg/storage/stores/shipper/indexshipper/downloads/...
+      - name: golangci-lint, issues introduced by this change only
+        if: always()
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2 run --timeout=15m --new-from-rev=490023563a1523742eaf10bc88cd1921c91449a2 ./pkg/storage/stores/shipper/indexshipper/downloads/...
